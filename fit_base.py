@@ -16,7 +16,22 @@ class fit:
         self.fixed_kwargs = fixed_kwargs
     def predict(self,x):
         return self.func_predict(x,*(self.fit_result),**self.fixed_kwargs)
-    
+
+def _l2(predicted,true):
+    finite_pred = np.isfinite(predicted)
+    finite_true = np.isfinite(true)
+    valid_idx = np.where(finite_pred & finite_true)
+    assert sum(finite_true) > 0 , "Brute giving completely non-finite objective"
+    # POST: have at least one value; use the squared sum of all of them as
+    # the penalty for infinite values
+    worst_penalty = sum(np.abs(true[np.where(finite_true)])**2)
+    values = np.ones(true.size) * worst_penalty
+    # where we are value, determine the actual penalty
+    values[valid_idx] = \
+        np.abs(predicted[valid_idx]-true[valid_idx])**2
+    to_ret =  sum(values)
+    return to_ret
+
 def objective_l2(func_predict,true_values,*args,**kwargs):
     """
     Returns the L2 (least squares) fit of the predicted values to the true,
@@ -38,21 +53,11 @@ def objective_l2(func_predict,true_values,*args,**kwargs):
     except TypeError:
         args = list([args[0]])
     predicted_values = func_predict(*args,**kwargs)
-    finite_pred = np.isfinite(predicted_values)
-    finite_true = np.isfinite(true_values)
-    valid_idx = np.where(finite_pred & finite_true)
-    assert sum(finite_true) > 0 , "Brute giving completely non-finite objective"
-    # POST: have at least one value; use the squared sum of all of them as
-    # the penalty for infinite values
-    worst_penalty = sum(np.abs(true_values[np.where(finite_true)])**2)
-    values = np.ones(true_values.size) * worst_penalty
-    # where we are value, determine the actual penalty
-    values[valid_idx] = \
-        np.abs(predicted_values[valid_idx]-true_values[valid_idx])**2
-    to_ret =  sum(values)
-    return to_ret
+    return _l2(predicted_values, true_values)
     
 def _prh_brute(objective,disp=False,full_output=False,**kwargs):
+    assert "ranges" in kwargs , "Must specify ranges for brute"
+    assert "Ns" in kwargs , "Must specify ranges for brute"
     return brute(objective,disp=disp,full_output=full_output,**kwargs)
     
 def brute_optimize(func_to_call,true_values,loss=objective_l2,
@@ -67,7 +72,6 @@ def brute_optimize(func_to_call,true_values,loss=objective_l2,
     Returns:
         output of scipy.optimize
     """
-    assert "ranges" in brute_dict , "Must specify ranges for brute"
     objective = lambda *args: loss(func_to_call,true_values,*args)
     return _prh_brute(objective,**brute_dict)
 
