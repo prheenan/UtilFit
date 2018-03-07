@@ -67,7 +67,8 @@ def brute_optimize(func_to_call,true_values,loss=objective_l2,
     Returns:
         output of scipy.optimize
     """
-    objective = lambda *args: objective_l2(func_to_call,true_values,*args)
+    assert "ranges" in brute_dict , "Must specify ranges for brute"
+    objective = lambda *args: loss(func_to_call,true_values,*args)
     return _prh_brute(objective,**brute_dict)
 
 def brute_fit(func_to_call,true_values,func_predict=None,fixed_kwargs=dict(),
