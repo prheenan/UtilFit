@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import sys
 
 from scipy.optimize import brute
+from scipy.interpolate import interp1d
 
 class fit:
     def __init__(self,func_fit,func_predict,fit_dict,fit_result,fixed_kwargs):
@@ -54,10 +55,43 @@ def objective_l2(func_predict,true_values,*args,**kwargs):
         args = list([args[0]])
     predicted_values = func_predict(*args,**kwargs)
     return _l2(predicted_values, true_values)
-    
+
+def _l2_grid_to_data(ext,force,ext_grid,force_grid,bounds_error=False):
+    """
+    Gets the l2 loss associated between a model (gridded data) and actual
+    data
+
+    :param ext: the x values of the data
+    :param force:  the y values of the data
+    :param ext_grid: the x values of the model
+    :param force_grid: the y values of the model
+    :param bounds_error: see interp1d
+    :return: _l2 loss of the model onto the data
+    """
+    if (ext_grid.size * force_grid.size > 0):
+        # inteprolate from the (noisy) data to the (smooth) grid
+        interpolator = interp1d(x=ext_grid,y=force_grid,kind='linear',
+                                fill_value='extrapolate',
+                                bounds_error=bounds_error)
+        predicted_values = interpolator(ext)
+    else:
+        # we didn't find any valid extensions using these parameters; don't
+        # use this model; give it an infinite loss.
+        predicted_values = np.inf * np.ones(force.size)
+    to_ret = _l2(predicted=predicted_values,true=force)
+    return to_ret
+
 def _prh_brute(objective,disp=False,full_output=False,**kwargs):
+    """
+    :param objective: function taking in arguments (must match ranges and Ns in
+    **kwargs, see brute) and returning a loss
+    :param disp: see brute
+    :param full_output:  see: brute
+    :param kwargs:  see : brute. Must specify ranges and Ns.
+    :return:
+    """
     assert "ranges" in kwargs , "Must specify ranges for brute"
-    assert "Ns" in kwargs , "Must specify ranges for brute"
+    assert "Ns" in kwargs , "Must specify Ns for brute"
     return brute(objective,disp=disp,full_output=full_output,**kwargs)
     
 def brute_optimize(func_to_call,true_values,loss=objective_l2,
