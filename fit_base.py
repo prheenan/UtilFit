@@ -56,18 +56,7 @@ def objective_l2(func_predict,true_values,*args,**kwargs):
     predicted_values = func_predict(*args,**kwargs)
     return _l2(predicted_values, true_values)
 
-def _l2_grid_to_data(ext,force,ext_grid,force_grid,bounds_error=False):
-    """
-    Gets the l2 loss associated between a model (gridded data) and actual
-    data
-
-    :param ext: the x values of the data
-    :param force:  the y values of the data
-    :param ext_grid: the x values of the model
-    :param force_grid: the y values of the model
-    :param bounds_error: see interp1d
-    :return: _l2 loss of the model onto the data
-    """
+def _grid_to_data(ext,force,ext_grid,force_grid,bounds_error=False):
     if (ext_grid.size * force_grid.size > 0):
         # inteprolate from the (noisy) data to the (smooth) grid
         interpolator = interp1d(x=ext_grid,y=force_grid,kind='linear',
@@ -78,6 +67,21 @@ def _l2_grid_to_data(ext,force,ext_grid,force_grid,bounds_error=False):
         # we didn't find any valid extensions using these parameters; don't
         # use this model; give it an infinite loss.
         predicted_values = np.inf * np.ones(force.size)
+    return predicted_values
+
+def _l2_grid_to_data(ext,force,ext_grid,force_grid,**kw):
+    """
+    Gets the l2 loss associated between a model (gridded data) and actual
+    data
+
+    :param ext: the x values of the data
+    :param force:  the y values of the data
+    :param ext_grid: the x values of the model
+    :param force_grid: the y values of the model
+    :param **kw: see _grid_to_data
+    :return: _l2 loss of the model onto the data
+    """
+    predicted_values = _grid_to_data(ext,force,ext_grid,force_grid,**kw)
     to_ret = _l2(predicted=predicted_values,true=force)
     return to_ret
 
