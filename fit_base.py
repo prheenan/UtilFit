@@ -56,17 +56,17 @@ def objective_l2(func_predict,true_values,*args,**kwargs):
     predicted_values = func_predict(*args,**kwargs)
     return _l2(predicted_values, true_values)
 
-def _grid_to_data(ext,ext_grid,force_grid,bounds_error=False):
-    if (ext_grid.size * force_grid.size > 0):
+def _grid_to_data(x,x_grid,y_grid,bounds_error=False):
+    if (x_grid.size * y_grid.size > 0):
         # inteprolate from the (noisy) data to the (smooth) grid
-        interpolator = interp1d(x=ext_grid,y=force_grid,kind='linear',
+        interpolator = interp1d(x=x_grid,y=y_grid,kind='linear',
                                 fill_value='extrapolate',
                                 bounds_error=bounds_error)
-        predicted_values = interpolator(ext)
+        predicted_values = interpolator(x)
     else:
         # we didn't find any valid extensions using these parameters; don't
         # use this model; give it an infinite loss.
-        predicted_values = np.inf * np.ones(ext.size)
+        predicted_values = np.inf * np.ones(x.size)
     return predicted_values
 
 def _l2_grid_to_data(ext,force,ext_grid,force_grid,**kw):
