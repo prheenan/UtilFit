@@ -22,15 +22,15 @@ def _l2(predicted,true):
     finite_pred = np.isfinite(predicted)
     finite_true = np.isfinite(true)
     valid_idx = np.where(finite_pred & finite_true)
-    assert sum(finite_true) > 0 , "Brute giving completely non-finite objective"
+    assert np.sum(finite_true) > 0 , "Brute giving completely non-finite objective"
     # POST: have at least one value; use the squared sum of all of them as
     # the penalty for infinite values
     worst_penalty = sum(np.abs(true[np.where(finite_true)])**2)
-    values = np.ones(true.size) * worst_penalty
+    values = np.ones(true.shape) * worst_penalty
     # where we are value, determine the actual penalty
     values[valid_idx] = \
         np.abs(predicted[valid_idx]-true[valid_idx])**2
-    to_ret =  sum(values)
+    to_ret =  np.sum(values)
     return to_ret
 
 def objective_l2(func_predict,true_values,*args,**kwargs):
