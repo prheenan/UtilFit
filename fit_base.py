@@ -7,6 +7,7 @@ import sys
 
 from scipy.optimize import brute
 from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
 
 class fit:
     def __init__(self,func_fit,func_predict,fit_dict,fit_result,fixed_kwargs):
@@ -17,6 +18,50 @@ class fit:
         self.fixed_kwargs = fixed_kwargs
     def predict(self,x):
         return self.func_predict(x,*(self.fit_result),**self.fixed_kwargs)
+
+class LocalMinimization(object):
+    def __init__(self,local_res,x,y,f,p0,y_err,kwargs):
+        """
+        :param local_res: result from curve_fit optimization
+        :param x: see local_minimization
+        :param y: see local_minimization
+        :param f: see local_minimization
+        :param p0: see local_minimization
+        :param y_err: see local_minimization
+        :param kwargs: see local_minimization
+        """
+        self.local_res = local_res
+        self.x = x
+        self.y = y
+        self.f = f
+        self.p0 = p0
+        self.y_err = y_err
+        self.kwargs = kwargs
+    @property
+    def p_opt(self):
+        return self.local_res[0]
+    @property
+    def p_error(self):
+        return np.sqrt(np.diag(self.local_res[1]))
+
+def local_minimization(f, x_data, y_data, p0, y_err=None, **kwargs):
+    """
+    :param f: function to call; called liked (x_data, *p0)
+    :param x_data:  independent values
+    :param y_data: dependent values
+    :param p0: initial guess for params
+    :param y_err: error in the y points
+    :param kwargs: passed to curve_fit
+    :return:
+    """
+    # see:
+    # stackoverflow.com/questions/14581358/
+    # getting-standard-errors-on-fitted-parameters-using-the-optimize-leastsq-method-i
+    local_res = curve_fit(f=f, xdata=x_data, ydata=y_data, p0=p0,
+                          sigma=y_err, absolute_sigma=True, **kwargs)
+    return LocalMinimization(local_res=local_res,x=x_data,y=y_data,
+                             f=f,p0=p0,y_err=y_err,kwargs=kwargs)
+
 
 def _l2(predicted,true):
     finite_pred = np.isfinite(predicted)
