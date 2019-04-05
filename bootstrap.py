@@ -30,7 +30,7 @@ def _multiprocess_adapt(a):
 
 
 def bootstrap(samples,function,n_trials,n_cpus=1,seed=None,args=[],
-              **kwargs):
+              do_not_resample=False,**kwargs):
     """
     :param samples: list-like of length n
     :param function:  takes in list, then possible *args and ***kwargs,
@@ -40,6 +40,8 @@ def bootstrap(samples,function,n_trials,n_cpus=1,seed=None,args=[],
     :param seed: if not None, seeds the PRNG
     :param args: list, passed directly to function
     :param kwargs: dictionary, passed directly to function
+    :param do_not_resample: if true, uses samples. Should only be used
+    when n trials = 1 (easy way to get the 'normal', unsamples value)
     :return: list of length n_trials, each element is function applied
     to samples using randomly drawn samples
     """
@@ -51,10 +53,14 @@ def bootstrap(samples,function,n_trials,n_cpus=1,seed=None,args=[],
         return
     if seed is not None:
         np.random.seed(seed)
-    sample_ensembles = [ [function,
-                          np.random.choice(samples,size=n,replace=True),
-                          args,kwargs]
-                         for _ in range(n_trials)]
+    if do_not_resample:
+        assert n_trials == 1 , "Randomization only disabled when using 1 trial"
+        sample_ensembles = [ [function,samples,args,kwargs] ]
+    else:
+        sample_ensembles = [ [function,
+                              np.random.choice(samples,size=n,replace=True),
+                              args,kwargs]
+                             for _ in range(n_trials)]
     if n_cpus > 1:
         Pool = multiprocessing.Pool(n_cpus)
         f_map = Pool.map
@@ -62,3 +68,9 @@ def bootstrap(samples,function,n_trials,n_cpus=1,seed=None,args=[],
         f_map = map
     to_ret = f_map(_multiprocess_adapt,sample_ensembles)
     return to_ret
+
+def max_cpus():
+    """
+    :return: maximum number of cpus to use (one less than exists)
+    """
+    return multiprocessing.cpu_count() - 1
