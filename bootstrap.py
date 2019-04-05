@@ -28,6 +28,14 @@ def _multiprocess_adapt(a):
     """
     return _adaptor_function(*a)
 
+def _map_helper(samples,n_cpus=1):
+    if n_cpus > 1:
+        Pool = multiprocessing.Pool(n_cpus)
+        f_map = Pool.map
+    else:
+        f_map = map
+    to_ret = f_map(_multiprocess_adapt,samples)
+    return to_ret
 
 def bootstrap(samples,function,n_trials,n_cpus=1,seed=None,args=[],
               do_not_resample=False,**kwargs):
@@ -61,13 +69,7 @@ def bootstrap(samples,function,n_trials,n_cpus=1,seed=None,args=[],
                               np.random.choice(samples,size=n,replace=True),
                               args,kwargs]
                              for _ in range(n_trials)]
-    if n_cpus > 1:
-        Pool = multiprocessing.Pool(n_cpus)
-        f_map = Pool.map
-    else:
-        f_map = map
-    to_ret = f_map(_multiprocess_adapt,sample_ensembles)
-    return to_ret
+    return _map_helper(sample_ensembles,n_cpus=n_cpus)
 
 def max_cpus():
     """
