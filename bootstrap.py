@@ -29,6 +29,12 @@ def _multiprocess_adapt(a):
     return _adaptor_function(*a)
 
 def _map_helper(samples,n_cpus=1):
+    """
+    :param samples:  see _multiprocess_adapt (list, each element like
+    <f, list_elements, args, kwargs>)
+    :param n_cpus:
+    :return:
+    """
     if n_cpus > 1:
         Pool = multiprocessing.Pool(n_cpus)
         f_map = Pool.map
@@ -65,8 +71,9 @@ def bootstrap(samples,function,n_trials,n_cpus=1,seed=None,args=[],
         assert n_trials == 1 , "Randomization only disabled when using 1 trial"
         sample_ensembles = [ [function,samples,args,kwargs] ]
     else:
+        idx = np.arange(n,dtype=np.int64)
         sample_ensembles = [ [function,
-                              np.random.choice(samples,size=n,replace=True),
+                              [samples[i] for i in np.random.choice(idx,size=n,replace=True)],
                               args,kwargs]
                              for _ in range(n_trials)]
     return _map_helper(sample_ensembles,n_cpus=n_cpus)
