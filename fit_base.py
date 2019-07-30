@@ -99,7 +99,8 @@ def objective_l2(func_predict,true_values,*args,**kwargs):
     except TypeError:
         args = list([args[0]])
     predicted_values = func_predict(*args,**kwargs)
-    return _l2(predicted_values, true_values)
+    obj = _l2(predicted_values, true_values)
+    return obj
 
 def _grid_to_data(x,x_grid,y_grid,bounds_error=False):
     if (x_grid.size * y_grid.size > 0):
