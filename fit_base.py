@@ -160,7 +160,7 @@ def brute_optimize(func_to_call,true_values,loss=objective_l2,
     return _prh_brute(objective,**brute_dict)
 
 def brute_fit(func_to_call,true_values,func_predict=None,fixed_kwargs=dict(),
-              fit_dict=dict()):
+              fit_dict=dict(),loss=objective_l2):
     """
     given a function for fiting and a function for predicting, calls 
     brute_optimize and returns a fit object
@@ -172,7 +172,8 @@ def brute_fit(func_to_call,true_values,func_predict=None,fixed_kwargs=dict(),
     Returns:
         output of brute_optimize, wrapped to a fit object
     """
-    brute_result = brute_optimize(func_to_call,true_values,brute_dict=fit_dict)
+    brute_result = brute_optimize(func_to_call,true_values,brute_dict=fit_dict,
+                                  loss=loss)
     return fit(func_fit=func_to_call,
                func_predict=func_predict,
                fit_dict=fit_dict,fixed_kwargs=fixed_kwargs,
