@@ -44,7 +44,8 @@ class LocalMinimization(object):
     def p_error(self):
         return np.sqrt(np.diag(self.local_res[1]))
 
-def local_minimization(f, x_data, y_data, p0, y_err=None, **kwargs):
+def local_minimization(f, x_data, y_data, p0, y_err=None,absolute_sigma=None,
+                       **kwargs):
     """
     :param f: function to call; called liked (x_data, *p0)
     :param x_data:  independent values
@@ -57,8 +58,10 @@ def local_minimization(f, x_data, y_data, p0, y_err=None, **kwargs):
     # see:
     # stackoverflow.com/questions/14581358/
     # getting-standard-errors-on-fitted-parameters-using-the-optimize-leastsq-method-i
+    if y_err is not None and absolute_sigma is None:
+        absolute_sigma = True
     local_res = curve_fit(f=f, xdata=x_data, ydata=y_data, p0=p0,
-                          sigma=y_err, absolute_sigma=True, **kwargs)
+                          sigma=y_err, absolute_sigma=absolute_sigma, **kwargs)
     return LocalMinimization(local_res=local_res,x=x_data,y=y_data,
                              f=f,p0=p0,y_err=y_err,kwargs=kwargs)
 
@@ -178,3 +181,33 @@ def brute_fit(func_to_call,true_values,func_predict=None,fixed_kwargs=dict(),
                func_predict=func_predict,
                fit_dict=fit_dict,fixed_kwargs=fixed_kwargs,
                fit_result=brute_result)
+
+def brute_then_bounded_minimize(f,x,y,ranges,yerr):
+    """
+    :param f: function, called like : f(x,r1,r2,..) where r_i corresponds
+    to variable bounded by ranges[i]
+    :param x:  idependent values
+    :param y:  depenedent values
+    :param ranges:  slices for each of the variable to fit
+    :param yerr:for each of y 
+    :return:
+    """
+    m_func = lambda *args: f(x,*args)
+    Ns = [ int(np.ceil((r.stop-r.start)/r.step)) for r in ranges]
+    fit_dict = dict(ranges=ranges, Ns=Ns, finish=None)
+    fit = brute_fit(func_to_call=m_func,true_values=y,
+                             fit_dict=fit_dict)
+    # use the brute force method to force a local minimization
+    half_steps = [r.step / 2 for r in ranges]
+    bounds = [[p0 - h, p0 + h] for h, p0 in zip(half_steps, fit.fit_result)]
+    bounds_lower = [min(b) for b in bounds]
+    bounds_upper = [max(b) for b in bounds]
+    bounds_local = (bounds_lower, bounds_upper)
+    # minimize the l2 loss for local minimization
+    f_local = lambda _F, *args: f(_F,*args)
+    # y_data is zero, since ideally we have zero loss..
+    kw_min = dict(f=f_local, x_data=x, y_data=y,
+                  bounds=bounds_local, p0=fit.fit_result,
+                  y_err=yerr,check_finite=True)
+    fit_local = local_minimization(**kw_min)
+    return fit_local
