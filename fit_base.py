@@ -182,14 +182,17 @@ def brute_fit(func_to_call,true_values,func_predict=None,fixed_kwargs=dict(),
                fit_dict=fit_dict,fixed_kwargs=fixed_kwargs,
                fit_result=brute_result)
 
-def brute_then_bounded_minimize(f,x,y,ranges,yerr):
+def brute_then_bounded_minimize(f,x,y,ranges,yerr,
+                                fail_on_localizing_error=True):
     """
     :param f: function, called like : f(x,r1,r2,..) where r_i corresponds
     to variable bounded by ranges[i]
     :param x:  idependent values
     :param y:  depenedent values
     :param ranges:  slices for each of the variable to fit
-    :param yerr:for each of y 
+    :param yerr:for each of y
+    :param fail_on_localizing_error: if True, if the local minimization fails,
+    then the function throws an error, otherwise just returns the grid
     :return:
     """
     m_func = lambda *args: f(x,*args)
@@ -208,6 +211,16 @@ def brute_then_bounded_minimize(f,x,y,ranges,yerr):
     # y_data is zero, since ideally we have zero loss..
     kw_min = dict(f=f_local, x_data=x, y_data=y,
                   bounds=bounds_local, p0=fit.fit_result,
-                  y_err=yerr,check_finite=True)
-    fit_local = local_minimization(**kw_min)
+                  y_err=yerr,check_finite=False)
+    try:
+        fit_local = local_minimization(**kw_min)
+    except ValueError as e:
+        if fail_on_localizing_error:
+            raise(e)
+        # ELSE: print the error and move on
+        print(e)
+        print("fit_base: brute failed on refinement. Returning best grid point")
+        fit_local = LocalMinimization(local_res=f_local, x=x, y=y,
+                                      f=f, p0=fit.fit_result,
+                                      y_err=yerr, kwargs=kw_min)
     return fit_local
