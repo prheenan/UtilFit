@@ -208,9 +208,10 @@ def brute_then_bounded_minimize(f,x,y,ranges,yerr,
     bounds_local = (bounds_lower, bounds_upper)
     # minimize the l2 loss for local minimization
     f_local = lambda _F, *args: f(_F,*args)
+    p0_initial =  fit.fit_result
     # y_data is zero, since ideally we have zero loss..
     kw_min = dict(f=f_local, x_data=x, y_data=y,
-                  bounds=bounds_local, p0=fit.fit_result,
+                  bounds=bounds_local, p0=p0_initial,
                   y_err=yerr,check_finite=False)
     try:
         fit_local = local_minimization(**kw_min)
@@ -220,7 +221,8 @@ def brute_then_bounded_minimize(f,x,y,ranges,yerr,
         # ELSE: print the error and move on
         print(e)
         print("fit_base: brute failed on refinement. Returning best grid point")
-        fit_local = LocalMinimization(local_res=f_local, x=x, y=y,
-                                      f=f, p0=fit.fit_result,
+        local_res = [[p0_initial],[-1 for _ in p0_initial]]
+        fit_local = LocalMinimization(local_res=local_res, x=x, y=y,
+                                      f=f, p0=p0_initial,
                                       y_err=yerr, kwargs=kw_min)
     return fit_local
