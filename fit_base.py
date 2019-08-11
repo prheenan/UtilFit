@@ -223,6 +223,8 @@ def brute_then_bounded_minimize(f,x,y,ranges,yerr,
         print("fit_base: brute failed on refinement. Returning best grid point")
         local_res = [[p0_initial],[-1 for _ in p0_initial]]
         fit_local = LocalMinimization(local_res=local_res, x=x, y=y,
-                                      f=f, p0=p0_initial,
+                                      f=f, p0=p0_initial[0],
                                       y_err=yerr, kwargs=kw_min)
+    # set f to none, to allow for pickling.
+    fit_local.f = None
     return fit_local
