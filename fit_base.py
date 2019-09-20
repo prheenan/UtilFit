@@ -198,14 +198,18 @@ def brute_then_bounded_minimize(f,x,y,ranges,yerr,
     m_func = lambda *args: f(x,*args)
     Ns = [ int(np.ceil((r.stop-r.start)/r.step)) for r in ranges]
     fit_dict = dict(ranges=ranges, Ns=Ns, finish=None)
-    fit = brute_fit(func_to_call=m_func,true_values=y,
-                             fit_dict=fit_dict)
+    fit = brute_fit(func_to_call=m_func,true_values=y,fit_dict=fit_dict)
     # use the brute force method to force a local minimization
     half_steps = [r.step / 2 for r in ranges]
-    bounds = [[p0 - h, p0 + h] for h, p0 in zip(half_steps, fit.fit_result)]
-    bounds_lower = [min(b) for b in bounds]
-    bounds_upper = [max(b) for b in bounds]
-    bounds_local = (bounds_lower, bounds_upper)
+    if len(Ns) > 1:
+        bounds = [[p0 - h, p0 + h] for h, p0 in zip(half_steps, fit.fit_result)]
+        bounds_lower = [min(b) for b in bounds]
+        bounds_upper = [max(b) for b in bounds]
+        bounds_local = (bounds_lower, bounds_upper)
+    else:
+        p0 = fit.fit_result
+        dp = half_steps[0]
+        bounds_local = ([p0 - dp], [p0 + dp])
     # minimize the l2 loss for local minimization
     f_local = lambda _F, *args: f(_F,*args)
     p0_initial =  fit.fit_result
