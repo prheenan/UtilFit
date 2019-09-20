@@ -106,7 +106,7 @@ def objective_l2(func_predict,true_values,*args,**kwargs):
     return obj
 
 def _grid_to_data(x,x_grid,y_grid,bounds_error=False):
-    if (x_grid.size * y_grid.size > 0):
+    if (x_grid.size > 1 and  y_grid.size > 1):
         # inteprolate from the (noisy) data to the (smooth) grid
         interpolator = interp1d(x=x_grid,y=y_grid,kind='linear',
                                 fill_value='extrapolate',
