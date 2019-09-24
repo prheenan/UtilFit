@@ -112,7 +112,7 @@ def objective_l2(func_predict,true_values,*args,error=None,**kwargs):
     return obj
 
 def _grid_to_data(x,x_grid,y_grid,bounds_error=False):
-    if (x_grid.size * y_grid.size > 0):
+    if (x_grid.size > 1 and  y_grid.size > 1):
         # inteprolate from the (noisy) data to the (smooth) grid
         interpolator = interp1d(x=x_grid,y=y_grid,kind='linear',
                                 fill_value='extrapolate',
@@ -208,10 +208,15 @@ def brute_then_bounded_minimize(f,x,y,ranges,yerr,
                     error=yerr)
     # use the brute force method to force a local minimization
     half_steps = [r.step / 2 for r in ranges]
-    bounds = [[p0 - h, p0 + h] for h, p0 in zip(half_steps, fit.fit_result)]
-    bounds_lower = [min(b) for b in bounds]
-    bounds_upper = [max(b) for b in bounds]
-    bounds_local = (bounds_lower, bounds_upper)
+    if len(Ns) > 1:
+        bounds = [[p0 - h, p0 + h] for h, p0 in zip(half_steps, fit.fit_result)]
+        bounds_lower = [min(b) for b in bounds]
+        bounds_upper = [max(b) for b in bounds]
+        bounds_local = (bounds_lower, bounds_upper)
+    else:
+        p0 = fit.fit_result
+        dp = half_steps[0]
+        bounds_local = ([p0 - dp], [p0 + dp])
     # minimize the l2 loss for local minimization
     f_local = lambda _F, *args: f(_F,*args)
     p0_initial =  fit.fit_result
