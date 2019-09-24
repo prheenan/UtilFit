@@ -41,7 +41,7 @@ def _map_helper(samples,n_cpus=1):
     else:
         f_map = map
     to_ret = f_map(_multiprocess_adapt,samples)
-    return to_ret
+    return list(to_ret)
 
 def bootstrap(samples,function,n_trials,n_cpus=1,seed=None,args=[],
               do_not_resample=False,**kwargs):
