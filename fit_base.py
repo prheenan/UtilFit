@@ -67,6 +67,8 @@ def local_minimization(f, x_data, y_data, p0, y_err=None,absolute_sigma=None,
 
 
 def _l2(predicted,true,error=None):
+    predicted = np.array(predicted)
+    true = np.array(true)
     finite_pred = np.isfinite(predicted)
     finite_true = np.isfinite(true)
     valid_idx = np.where(finite_pred & finite_true)
@@ -83,6 +85,7 @@ def _l2(predicted,true,error=None):
         see: 
         docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
         """
+        error = np.array(error)
         values[valid_idx] /= error[valid_idx]**2
     to_ret =  np.sum(values)
     return to_ret
