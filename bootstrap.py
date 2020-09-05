@@ -78,6 +78,15 @@ def bootstrap(samples,function,n_trials,n_cpus=1,seed=None,args=[],
                              for _ in range(n_trials)]
     return _map_helper(sample_ensembles,n_cpus=n_cpus)
 
+def bootstrap_with_standard(*args,**kwargs):
+    kw_standard = dict(**kwargs)
+    kw_standard["do_not_resample"] = True
+    kw_standard["n_cpus"] = 1
+    kw_standard["n_trials"] = 1
+    normal = bootstrap(*args, **kw_standard)
+    others = bootstrap(*args,**kwargs)
+    return normal, others
+
 def max_cpus():
     """
     :return: maximum number of cpus to use (one less than exists)

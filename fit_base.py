@@ -60,6 +60,14 @@ def local_minimization(f, x_data, y_data, p0, y_err=None,absolute_sigma=None,
     # getting-standard-errors-on-fitted-parameters-using-the-optimize-leastsq-method-i
     if y_err is not None and absolute_sigma is None:
         absolute_sigma = True
+    condition = np.isfinite(x_data) & np.isfinite(y_data)
+    if y_err is not None:
+        condition &= np.isfinite(y_err)
+    ok_idx = np.where( condition )
+    x_data = x_data[ok_idx]
+    y_data = y_data[ok_idx]
+    if y_err is not None:
+        y_err = y_err[ok_idx]
     local_res = curve_fit(f=f, xdata=x_data, ydata=y_data, p0=p0,
                           sigma=y_err, absolute_sigma=absolute_sigma, **kwargs)
     return LocalMinimization(local_res=local_res,x=x_data,y=y_data,
