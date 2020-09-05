@@ -74,7 +74,9 @@ def local_minimization(f, x_data, y_data, p0, y_err=None,absolute_sigma=None,
                              f=f,p0=p0,y_err=y_err,kwargs=kwargs)
 
 
-def _l2(predicted,true):
+def _l2(predicted,true,error=None):
+    predicted = np.array(predicted)
+    true = np.array(true)
     finite_pred = np.isfinite(predicted)
     finite_true = np.isfinite(true)
     valid_idx = np.where(finite_pred & finite_true)
@@ -86,10 +88,17 @@ def _l2(predicted,true):
     # where we are value, determine the actual penalty
     values[valid_idx] = \
         np.abs(predicted[valid_idx]-true[valid_idx])**2
+    if error is not None:
+        """ 
+        see: 
+        docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
+        """
+        error = np.array(error)
+        values[valid_idx] /= error[valid_idx]**2
     to_ret =  np.sum(values)
     return to_ret
 
-def objective_l2(func_predict,true_values,*args,**kwargs):
+def objective_l2(func_predict,true_values,*args,error=None,**kwargs):
     """
     Returns the L2 (least squares) fit of the predicted values to the true,
     normalizd by (true_values)**2
@@ -110,7 +119,7 @@ def objective_l2(func_predict,true_values,*args,**kwargs):
     except TypeError:
         args = list([args[0]])
     predicted_values = func_predict(*args,**kwargs)
-    obj = _l2(predicted_values, true_values)
+    obj = _l2(predicted_values, true_values,error)
     return obj
 
 def _grid_to_data(x,x_grid,y_grid,bounds_error=False):
@@ -155,7 +164,7 @@ def _prh_brute(objective,disp=False,full_output=False,**kwargs):
     assert "Ns" in kwargs , "Must specify Ns for brute"
     return brute(objective,disp=disp,full_output=full_output,**kwargs)
     
-def brute_optimize(func_to_call,true_values,loss=objective_l2,
+def brute_optimize(func_to_call,true_values,error=None,loss=objective_l2,
                    brute_dict=dict()):
     """
     given a function to call, gets the brute-optimized parameter values
@@ -167,11 +176,11 @@ def brute_optimize(func_to_call,true_values,loss=objective_l2,
     Returns:
         output of scipy.optimize
     """
-    objective = lambda *args: loss(func_to_call,true_values,*args)
+    objective = lambda *args: loss(func_to_call,true_values,*args,error=error)
     return _prh_brute(objective,**brute_dict)
 
 def brute_fit(func_to_call,true_values,func_predict=None,fixed_kwargs=dict(),
-              fit_dict=dict(),loss=objective_l2):
+              fit_dict=dict(),loss=objective_l2,**kw):
     """
     given a function for fiting and a function for predicting, calls 
     brute_optimize and returns a fit object
@@ -184,7 +193,7 @@ def brute_fit(func_to_call,true_values,func_predict=None,fixed_kwargs=dict(),
         output of brute_optimize, wrapped to a fit object
     """
     brute_result = brute_optimize(func_to_call,true_values,brute_dict=fit_dict,
-                                  loss=loss)
+                                  loss=loss,**kw)
     return fit(func_fit=func_to_call,
                func_predict=func_predict,
                fit_dict=fit_dict,fixed_kwargs=fixed_kwargs,
@@ -206,7 +215,8 @@ def brute_then_bounded_minimize(f,x,y,ranges,yerr,
     m_func = lambda *args: f(x,*args)
     Ns = [ int(np.ceil((r.stop-r.start)/r.step)) for r in ranges]
     fit_dict = dict(ranges=ranges, Ns=Ns, finish=None)
-    fit = brute_fit(func_to_call=m_func,true_values=y,fit_dict=fit_dict)
+    fit = brute_fit(func_to_call=m_func,true_values=y,fit_dict=fit_dict,
+                    error=yerr)
     # use the brute force method to force a local minimization
     half_steps = [r.step / 2 for r in ranges]
     if len(Ns) > 1:
